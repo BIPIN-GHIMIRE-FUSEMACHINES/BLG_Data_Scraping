@@ -65,8 +65,6 @@ def scrape_plays(plays_json_content):
     #awards
     awards = {}
     awards_data = plays_json_content.get('TitleAttributeDisplayModel').get('DescriptionAwards')
-    # clean = re.compile('<.*?>')
-    # awards_data_clean =re.sub(clean,'',awards_data)
     awards_data_clean = clean_text(awards_data)
     awards_data = awards_data_clean.split(", ")
     awards ={'awards':awards_data}
@@ -76,8 +74,6 @@ def scrape_plays(plays_json_content):
 
     #Brief Synopsis
     brief_synop = plays_json_content.get('ShortDescription')
-    # clean = re.compile('<.*?>')
-    # brief_synopsis = re.sub(clean,'',brief_synop)
     brief_synopsis = clean_text(brief_synop)
 
     #Summary
@@ -88,8 +84,6 @@ def scrape_plays(plays_json_content):
 
     #History
     history_raw = plays_json_content.get('TitleAttributeDisplayModel').get('DescriptionProductionInformation')
-    # clean = re.compile('<.*?>')
-    # history = re.sub(clean,'',history_raw)
     history = clean_text(history_raw)
 
     #Peromrance Group
@@ -203,10 +197,6 @@ def scrape_page(json_content):
     return data_collection
 
 
-# concord_url = "https://www.concordtheatricals.com/p/56384/35mm-a-musical-exhibition"
-
-
-
 def start_concord():
     #### INITIAL PART ###
     global df # Declare df as global
@@ -278,9 +268,6 @@ def start_concord():
         print(itetration_count)
 
     df_v2 = pd.concat(all_data, ignore_index=True)
-    # df_v2.to_csv('./data/raw_data/concord/scraped_data.csv', index=False)
-
-
 
     initial_df = spark.createDataFrame(read_csv_df)
     final_df = spark.createDataFrame(df_v2)
