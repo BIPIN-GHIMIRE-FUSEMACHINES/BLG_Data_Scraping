@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import time
 import re
 import json
+import csv
+import os
 
 df1 = pd.read_csv("../data/mti_urls.csv")
 
@@ -35,7 +37,6 @@ def scrape_and_compare(url1, url2):
 
     df2 = pd.DataFrame(data)
 
-    new_urls = df1[]
     merged_df = df1.merge(df2, on='show_url', how='outer', indicator=True)
 
     not_common = merged_df[merged_df['_merge'] != 'both']
@@ -51,7 +52,7 @@ def scrape_and_compare(url1, url2):
         try:
             raw_data = scrape_data_for_urls(remaining_urls)
             print("trying to append the data to test csv")
-            raw_data.to_csv("../data/mti_raw_data.csv", index=False, header = True)
+            raw_data.to_csv("../data/mti_raw_data_v2.csv", index=False, header = True)
             print("data appended to test csv")
             remaining_urls.to_csv(url1, mode='a', index=False, header=False)
             return remaining_urls
@@ -90,6 +91,7 @@ def scrape_data_for_urls(urls):
     full_synopsis = []
     synopsis_brief = []
     available_resource = []
+    show_availability = []
 
     print("Inside scrape data for urls")
     for url in urls:
@@ -100,7 +102,6 @@ def scrape_data_for_urls(urls):
             individual_play_print_page_link = individual_play_page_soup.find(class_='mti-print-button')
         except:
             print("couldnot get the response for inside page")
-
             continue
         
         songs = []
@@ -151,6 +152,13 @@ def scrape_data_for_urls(urls):
             version.append(show_version.text.strip())
         except:
             version.append(None) 
+
+        try:
+            availability = individual_play_page_soup.find(class_='field-name-field-show-availability-message')
+            show_availability.append(availability.text.strip())
+        except:
+            availability = None
+            show_availability.append(availability)
 
         try:
             synopsis_brief.append(individual_play_page_soup.find(class_ = "field-name-field-show-synopsis-brief").text.strip())
@@ -361,10 +369,6 @@ def scrape_data_for_urls(urls):
             characters = None
             characters_data.append(characters)
 
-
-        
-
-
         attributions = play_print_page_soup.find_all('div', class_='field-attribution-label')
         if len(attributions) > 0:
             billing_dict = {}
@@ -382,7 +386,7 @@ def scrape_data_for_urls(urls):
             billing.append(billing_dict)
         else:
             billing.append(None)
-        # Requirements (Credit)
+
         try:
             credit_requiements = play_print_page_soup.find(class_='show-billing__rider-wrapper')
             billing_requirements_text = credit_requiements.text.strip()
@@ -393,14 +397,11 @@ def scrape_data_for_urls(urls):
         except:
             credits.append(None)
 
-
         try:
             full_synopsis.append(play_print_page_soup.find(class_ = 'field-name-field-show-synopsis-long').text.strip())
         except:
             full_synopsis.append(None)
-        
-        
-        
+
 
     data = {
         'show_title': show_title,
@@ -425,10 +426,9 @@ def scrape_data_for_urls(urls):
         'version': version,
         'full_synopsis': full_synopsis,
         'available_resource': available_resource,
-        'synopsis_brief': synopsis_brief
+        'synopsis_brief': synopsis_brief,
+        'show_availability': show_availability
     }
-
-    # print("Lengths - Show Title:", len(show_title), "Brief Synopsis:", len(brief_synopsis), "Number of Roles:", len(number_of_roles), "Rating of Show:", len(rating_of_show), "Number of Acts:", len(number_of_acts), "Cast Size:", len(cast_size), "Cast Type:", len(cast_type), "Dance Requirement:", len(dance_requirement), "Characters:", len([characters]), "Logo URL:", len(logo_url))
 
     df = pd.DataFrame(data)
     raw_data = raw_data._append(df, ignore_index=True)
@@ -436,11 +436,19 @@ def scrape_data_for_urls(urls):
 
     return raw_data
 
+def create_csv_if_not_exist(csv_file, header):
+    if not os.path.exists(csv_file):
+        with open(csv_file, 'w', newline='') as file:
+            writer = csv.DictWriter(file, fieldnames=header)
+            writer.writeheader()
 
 
 if __name__ == "__main__":
     url1 = "../data/mti_urls.csv"
     url2 = "https://www.mtishows.com/shows/all"
+    header = ["show_url"]
+    create_csv_if_not_exist(url1, header)
+    
     result = scrape_and_compare(url1, url2)
 
     if result is not None and len(result) > 0:
